@@ -5,9 +5,9 @@ from .serializers import UserSerializer
 from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 
@@ -23,11 +23,14 @@ def register_user(request):
 
 
 @api_view(['POST'])
-def login_user(request):
+def user_login(request):
     if request.method == 'POST':
         username = request.data.get('username')
         password = request.data.get('password')
 
+        if not username or not password:
+            return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
+        
         user = None
         if '@' in username:
             try:
@@ -39,10 +42,28 @@ def login_user(request):
             user = authenticate(username=username, password=password)
 
         if user:
-            token, _ = Token.objects.get_or_create(user=user)
-            return Response({'token': token.key}, status=status.HTTP_200_OK)
+            refresh = RefreshToken.for_user(user)
+            return Response({
+                'refresh': str(refresh),
+                'access': str(refresh.access_token),
+                }, status=status.HTTP_200_OK)
         
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def user_logout(request):
+    if request.method == 'POST':
+        try:
+            refresh_token = request.data.get('refresh')
+            if refresh_token is None:
+                return Response({'error': 'Refresh token is required.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            token = RefreshToken(refresh_token)
+            token.blacklist()
 
+            return Response({'message': 'Successfully logged out.'}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
