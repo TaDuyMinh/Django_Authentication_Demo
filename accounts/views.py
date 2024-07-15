@@ -1,8 +1,7 @@
 # Create your views here.
-from rest_framework import status
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from .serializers import UserSerializer
-from rest_framework import status
 from django.core.exceptions import ObjectDoesNotExist
 from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
@@ -11,6 +10,13 @@ from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
 
+class IsUser(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.role == 'USER'
+
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user and request.user.role == 'ADMIN'
 
 @api_view(['POST'])
 def register_user(request):
@@ -24,7 +30,7 @@ def register_user(request):
 
 @api_view(['POST'])
 def user_login(request):
-    if request.method == 'POST':
+    if request.method == 'POST': # thua
         username = request.data.get('username')
         password = request.data.get('password')
 
@@ -34,7 +40,7 @@ def user_login(request):
         user = None
         if '@' in username:
             try:
-                user = User.objects.get(email=username)
+                user = User.objects.get(email=username) # Note !!!
             except ObjectDoesNotExist:
                 pass
 
@@ -66,4 +72,27 @@ def user_logout(request):
             return Response({'message': 'Successfully logged out.'}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
+
+@api_view(['GET'])
+@permission_classes([IsUser,IsAuthenticated])
+def get_user_infomation(request):
+    user = request.user
+    data = {
+        'id':user.id,
+        'username': user.username,
+        'email': user.email,
+    }
+    return Response(data,status=status.HTTP_200_OK)
+
+@api_view(['DELETE'])
+@permission_classes([IsAuthenticated, IsAdmin])
+def delete_user(request, user_id):
+    try:
+        user = User.objects.get(id=user_id)
+        user.delete()
+        return Response({'message': 'User deleted successfully'}, status=status.HTTP_200_OK)
+    except user.DoesNotExist:
+         return Response({'error': 'User doesnt exist.'}, status=status.HTTP_404_NOT_FOUND)
+    
+    #TODO Update user infomation
