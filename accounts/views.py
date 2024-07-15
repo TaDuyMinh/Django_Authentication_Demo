@@ -41,8 +41,8 @@ def user_login(request):
         if '@' in username:
             try:
                 user = User.objects.get(email=username) # Note !!!
-            except ObjectDoesNotExist:
-                pass
+            except User.DoesNotExist:
+                User=None
 
         if not user:
             user = authenticate(username=username, password=password)

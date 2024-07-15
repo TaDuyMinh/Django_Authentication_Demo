@@ -7,6 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['username', 'email', 'password','role']
         extra_kwargs = {'password': {'write_only': True}}  # kwargs = keyword arguments
+                                                           # TODO : research about kwargs
 
     def create(self, validated_data):
         user = User(
