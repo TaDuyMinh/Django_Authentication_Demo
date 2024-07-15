@@ -37,15 +37,7 @@ def user_login(request):
         if not username or not password:
             return Response({'error': 'Username and password are required'}, status=status.HTTP_400_BAD_REQUEST)
         
-        user = None
-        if '@' in username:
-            try:
-                user = User.objects.get(email=username) # Note !!!
-            except User.DoesNotExist:
-                User=None
-
-        if not user:
-            user = authenticate(username=username, password=password)
+        user = authenticate(username=username, password=password)
 
         if user:
             refresh = RefreshToken.for_user(user)
