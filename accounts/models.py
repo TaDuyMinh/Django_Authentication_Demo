@@ -8,7 +8,7 @@ from django.db import models
 class User(AbstractUser):
 
     email = models.EmailField(unique=True)
-    role = models.CharField(max_length=10)
+    role = models.CharField(max_length=10, default='USER')
 
     def __str__(self):
         return self.username
