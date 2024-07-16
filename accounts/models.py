@@ -8,16 +8,19 @@ from django.db import models
 class User(AbstractUser):
 
     email = models.EmailField(unique=True)
+
     ROLE_CHOICES = (
         ('USER', 'User'),
         ('ADMIN', 'Admin'),
     )
     role = models.CharField(max_length=5, choices=ROLE_CHOICES, default='USER')
-    
+
     def save(self, *args, **kwargs):
         if self.role == 'ADMIN':
+            self.is_staff = True
             self.is_superuser = True
         else:
+            self.is_staff=False
             self.is_superuser = False
         super(User, self).save(*args, **kwargs)
 

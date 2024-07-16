@@ -7,6 +7,7 @@ from django.contrib.auth import authenticate
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework_simplejwt.tokens import RefreshToken
+from django.shortcuts import render
 
 from .models import User
 
@@ -24,13 +25,13 @@ def register_user(request):
         serializer = UserSerializer(data=request.data) # take requested data
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @api_view(['POST'])
 def user_login(request):
-    if request.method == 'POST': # thua
+    if request.method == 'POST': # thừa
         username = request.data.get('username')
         password = request.data.get('password')
 
@@ -69,13 +70,21 @@ def user_logout(request):
 @api_view(['GET'])
 @permission_classes([IsUser,IsAuthenticated])
 def get_user_infomation(request):
-    user = request.user
+    user_id = request.user.id
+    try:
+        user = User.objects.get(id=user_id)
+    except User.DoesNotExist:
+        return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+    
     data = {
-        'id':user.id,
+        'id': user.id,
         'username': user.username,
         'email': user.email,
+        'role' :user.role,
     }
+
     return Response(data,status=status.HTTP_200_OK)
+
 
 @api_view(['DELETE'])
 @permission_classes([IsAuthenticated, IsAdmin])
@@ -88,3 +97,4 @@ def delete_user(request, user_id):
          return Response({'error': 'User doesnt exist.'}, status=status.HTTP_404_NOT_FOUND)
     
     #TODO Update user infomation
+
